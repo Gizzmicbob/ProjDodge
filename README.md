@@ -20,3 +20,6 @@ There are multiples stages as you play.
 * Six projectiles > large player > medium projectiles
 #### 6. Sixth
 * Six projectiles > large player > fast projectiles
+
+If you do not have a Sense HAT, you can still play with the lin below:
+# https://trinket.io/sense-hat

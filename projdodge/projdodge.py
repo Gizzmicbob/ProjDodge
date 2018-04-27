@@ -16,9 +16,11 @@ PROJCOLOR1 = (200,200,200)
 PROJCOLOR2 = (200,200,0)
 PROJCOLOR3 = (200,0,200)
 PROJCOLOR4 = (0,0,200)
-PROJCOLOR5 = (255,25,0)
+PROJCOLOR5 = (0,200,200)
 
 #speed
+#STANDARD - 0.8
+#ASYNC/RAND - 0.2
 BASESPEED = 0.8 #seconds until projectiles move (initial speed... ~halves by the hardest round)
 
 #screen flipped
@@ -35,27 +37,41 @@ ROUNDLIMIT5 = 10
 SKIP_DMESSAGE = False
 DM_SPEED = 0.05
 
+#move mode
+ASYNC = False #moves porjectiles one at a time... should be better perf
+RAND = False #randomly moves projectiles on at a time.. requires ASYNC to work
+
+#godmode
+GODMODE = False #nuf said?
+
 #don't change below unless you know what you're doing
 #inital setup
 # # # # # #
-#just to shorten the SenseHat functions
-sense = SenseHat()
+
+sense = SenseHat()#just to shorten the SenseHat functions
+
 #arrays
 projectiles = []
 startPos = [3,3] #the start position of the player
+
 #ints
+RANDround = 0
 curRound = 0 #current round
 stage = 0 #current stage
 alongX = 0 #to limit projectiles on x axis
 alongY = 0 #to limit projectiles on y axis
+curProj = 0
+projCount = 4
+
 #bools
 started = False
 alive = True
 moved = False
-#speed
-speed = BASESPEED
-#time
-startTime = time.time()
+
+speed = BASESPEED #speed
+
+startTime = time.time() #time
+
 #flip stuff
 up = "up"
 down = "down"
@@ -67,8 +83,10 @@ if FLIP:
   down = "up"
   left = "right"
   right = "left"
+  
 #clearing the screen to start
 sense.clear()
+
 # # # # # #
 
 ###reset stuff###
@@ -79,16 +97,15 @@ def DeathMessage():
   if not SKIP_DMESSAGE:
     #little and fat Karl death messages
     if not stage > 1:
-      sense.show_message("Little Karl died on round "+str(curRound)+" :(", DM_SPEED, PLAYERCOLOR)
+      sense.show_message("Little Karl died after round "+str(curRound-1)+" :(", DM_SPEED, PLAYERCOLOR)
     else:
-      sense.show_message("Fat Karl died on round "+str(curRound)+" :(", DM_SPEED, PLAYERCOLOR)
+      sense.show_message("Fat Karl died after round "+str(curRound-1)+" :(", DM_SPEED, PLAYERCOLOR)
   ClearAll()
   alive = True #sets player to be alive after the death message
 
 def ClearAll():
   #resets everything back to their original state
   #you have to call global to use vars outside of the function
-  global frame
   global curRound
   global stage
   global started
@@ -193,35 +210,80 @@ def blit():
         sense.set_pixel(projPos5.x, projPos5.y, PROJCOLOR5)  
       for proj in projectiles:
         #checks if any active projectiles are touching the player
-        if proj.active and alive and started: #checks alive and started to fix spawn kill bug
-          if proj.x == startPos[0]:
-            if proj.y == startPos[1]:
-              print("Player died at "+str(proj.x)+","+str(proj.y)+" by projectile #"+str(proj.name)+" on round #"+str(curRound))
-              alive = False
-              DeathMessage()
-              return
-          if stage >= 2: #checks impacts for larger model
-            if proj.x == startPos[0]+1:
+        if not GODMODE:
+          if proj.active and alive and started: #checks alive and started to fix spawn kill bug
+            if proj.x == startPos[0]:
               if proj.y == startPos[1]:
                 print("Player died at "+str(proj.x)+","+str(proj.y)+" by projectile #"+str(proj.name)+" on round #"+str(curRound))
                 alive = False
                 DeathMessage()
                 return
-            if proj.x == startPos[0]:
-              if proj.y == startPos[1]+1:
-                print("Player died at "+str(proj.x)+","+str(proj.y)+" by projectile #"+str(proj.name)+" on round #"+str(curRound))
-                alive = False
-                DeathMessage()
-                return
-            if proj.x == startPos[0]+1:
-              if proj.y == startPos[1]+1:
-                print("Player died at "+str(proj.x)+","+str(proj.y)+" by projectile #"+str(proj.name)+" on round #"+str(curRound))
-                alive = False
-                DeathMessage()
-                return
+            if stage >= 2: #checks impacts for larger model
+              if proj.x == startPos[0]+1:
+                if proj.y == startPos[1]:
+                  print("Player died at "+str(proj.x)+","+str(proj.y)+" by projectile #"+str(proj.name)+" on round #"+str(curRound))
+                  alive = False
+                  DeathMessage()
+                  return
+              if proj.x == startPos[0]:
+                if proj.y == startPos[1]+1:
+                  print("Player died at "+str(proj.x)+","+str(proj.y)+" by projectile #"+str(proj.name)+" on round #"+str(curRound))
+                  alive = False
+                  DeathMessage()
+                  return
+              if proj.x == startPos[0]+1:
+                if proj.y == startPos[1]+1:
+                  print("Player died at "+str(proj.x)+","+str(proj.y)+" by projectile #"+str(proj.name)+" on round #"+str(curRound))
+                  alive = False
+                  DeathMessage()
+                  return
+                
 ###tells projectiles to move###
-def projMove():
-  #runs the move function if the player is still alive
+def AProjMove(number):
+  global curProj
+  global curRound
+  global RANDround
+  curProj += 1
+  count = 3
+  if stage >= 1:
+    count = 4
+  if stage >= 3:
+    count = 5
+  if RAND:
+    number = random.randint(0,count)
+  if number == 0:
+    if projectiles[0].move():
+      blit()
+  elif number == 1:
+    if projectiles[1].move():
+      blit()
+  elif number == 2:
+    if projectiles[2].move():
+      blit()
+  elif number == 3:
+    if projectiles[3].move():
+      blit()
+      if stage < 1:
+        curProj = 0
+  elif number == 4:
+    if projectiles[4].move():
+      blit()
+      if stage < 3:
+        curProj = 0
+  elif number == 5:
+    if projectiles[5].move():
+      blit()
+    curProj = 0
+  if RAND:
+    RANDround += 1
+    if RANDround >= 8 * projCount:
+      RANDround = 0
+      if curRound > 0:
+        print("Passed round #"+str(curRound))
+      curRound += 1
+
+#runs the move function if the player is still alive
+def ProjMove():
   for proj in projectiles:
     if alive:
       if proj.move():
@@ -242,11 +304,13 @@ while True:
     if (time.time() - startTime) > speed:
         startTime = time.time()
         #projectile spawning
-        projMove()
-        frame = 0
+        if ASYNC:
+          AProjMove(curProj)
+        else:
+          ProjMove()
         for proj in projectiles:
           if proj.active == 0: #sets the new properties for the projectile if it is inactive
-            if proj.name == 0:
+            if proj.name == 0 and not (ASYNC and RAND):
               if curRound > 0:
                 print("Passed round #"+str(curRound))
               curRound += 1 #adds a round
@@ -263,12 +327,14 @@ while True:
             px = random.randint(0,7)
             if curRound == ROUNDLIMIT and stage == 0:
               stage = 1 #sets to stage 2
+              projCount = 5
               print("Added a projectile")
             elif curRound == ROUNDLIMIT2 and stage == 1:
               stage = 2 #sets to stage 3
               print("Size increased")
             elif curRound == ROUNDLIMIT3 and stage == 2:
               stage = 3 #sets to stage 4
+              projCount = 6
               print("Added a projectile")
             elif curRound == ROUNDLIMIT4 and stage == 3:
               stage = 4 #sets to stage 5
